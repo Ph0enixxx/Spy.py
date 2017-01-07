@@ -5,10 +5,37 @@
 
 
 # S("users").
+"""
+where ok
+group
+order
+join
+distinct
+query
+having
+page ok
+
+
+增：add(dict)
+删除：remove(condition)
+     remove_unsafe(condition)
+改：save(dict)
+   save_unsafe(condition)
+查：select(row) 返回dataframe？list？
+    json(row) 返回json
+    count() 计数 ok
+    getSql() 获取sql语句 ok
+    query(sql) ok
+
+防止注入
+"""
 
 
 class Spy(object):
     def __init__(self, table):
+        if table == False:
+            #抛出异常
+            pass
         self.table = table
         self.sql = ["from ", str(self.table), " where 1=1 "]
         self.fieldAdded = False
@@ -24,7 +51,7 @@ class Spy(object):
             #抛出异常
             pass
         else:
-            columns = ["select ",",".join(columns)]
+            self.columns = ["select ",",".join(columns)]
         self.fieldAdded = True
         return self
 
@@ -59,8 +86,11 @@ class Spy(object):
         @param
     """
     def _terminate(self):
-        if self.fieldAdded == False:
+        if self.fieldAdded == True:
+            self.sql = self.columns + self.sql
+        else:
             self.sql = ["select * "] + self.sql
+
         if self.pageAdded == True:
             self.sql += self.page
         pass
@@ -69,15 +99,31 @@ class Spy(object):
         @return Dataframe？ 用于显示结果
     """
 
-    def select(self, rows=-1):
+    def select(self):
         self._terminate()
         print(" ".join(self.sql))
         pass
-
-
-
+    """
+        @直接执行sql语句
+    """
+    def query(self,sql):
+        sql = self.sql
+        pass
+    """
+        @获取sql语句
+    """
+    def getSql(self):
+        self._terminate()
+        return str(self.sql)
+    """
+        @统计查询结果行数
+    """
+    def count(self):#SELECT COUNT(*)
+        self.field(["count(*) as num"])
+        self.page(1,1)
+        self.select()
 Spy("users").where({"age":15}).select()
 Spy("users").where({"age":'1000000'}).page(15).select()
 Spy("users").where({"age":(">",15)}).page(15).select()
-Spy("users").select()
+Spy("users").count()
 Spy("users").where({"age":15}).select()
