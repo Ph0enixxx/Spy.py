@@ -16,7 +16,7 @@ having
 page ok
 
 
-增：add(dict)
+增：add(dict) ok
 删除：remove(condition)
      remove_unsafe(condition)
 改：save(dict)
@@ -38,6 +38,7 @@ class Spy(object):
             pass
         self.table = table
         self.sql = ["from ", str(self.table), " where 1=1 "]
+        self.whereAdded = False
         self.fieldAdded = False
         self.pageAdded = False
         pass
@@ -64,12 +65,15 @@ class Spy(object):
     """
 
     def where(self, conditions):
+        self.whereAdded = True
+        self.whereS = []
         for k,v in conditions.items():
             if type(v) == type(("tuple",123)):
-                self.sql += [" and ",str(k),str(v[0]),'"'+str(v[1])+'"']
+                self.whereS += [" and ",str(k),str(v[0]),'"'+str(v[1])+'"']
             #if type(v) == type("string"):
             else:
-                self.sql += [" and ",str(k),"=",'"'+str(v)+'"',""]
+                self.whereS += [" and ",str(k),"=",'"'+str(v)+'"',""]
+            self.sql += self.whereS
         return self
     """
         :param num
@@ -93,6 +97,14 @@ class Spy(object):
 
         if self.pageAdded == True:
             self.sql += self.page
+        pass
+
+    """
+        执行sql语句
+    """
+    def _execute(self):
+        print(" ".join(self.sql))
+        # print(self.sql)
         pass
     """
         @param rows 行数（可选）-1为不选
@@ -122,8 +134,38 @@ class Spy(object):
         self.field(["count(*) as num"])
         self.page(1,1)
         self.select()
+
+    """
+        @param content dict 添加的内容
+    """
+    def add(self,content={}):
+        if content == {}:
+            return True
+        self.sql = ["insert into ", self.table, " ("]
+        for k,v in content.items():
+            self.sql += [str(k),","]
+        self.sql = self.sql[:-1] + [") values ("]
+        for k,v in content.items():
+            self.sql += [str(v),","]
+        self.sql = self.sql[:-1] + [");"]
+        self._execute()
+
+    """
+        删
+    """
+    def remove(self):
+        if self.whereAdded == False:
+            #抛出异常
+            return
+        self.sql = ["delete from ", self.table,"where 1=1"] + self.whereS
+        self._execute()
+
+
 Spy("users").where({"age":15}).select()
 Spy("users").where({"age":'1000000'}).page(15).select()
 Spy("users").where({"age":(">",15)}).page(15).select()
 Spy("users").count()
 Spy("users").where({"age":15}).select()
+Spy("users").add({"aa":"bbbb","bbb":"oooo"})
+Spy("users").remove()
+Spy("users").where({"age":(">",15)}).remove()
